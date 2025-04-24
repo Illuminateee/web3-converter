@@ -10,6 +10,7 @@ app.use(express.json());
 app.get('/api/token/:address', async (req, res) => {
   try {
     const { address } = req.params;
+    const { amount } = req.query;
     
     if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
       return res.status(400).json({
@@ -18,7 +19,19 @@ app.get('/api/token/:address', async (req, res) => {
       });
     }
     
-    const result = await getTokenWithQuote(address);
+    // Parse amount if provided, default to 1 ETH
+    let parsedAmount = 1;
+    if (amount) {
+      parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid amount parameter. Must be a positive number.'
+        });
+      }
+    }
+    
+    const result = await getTokenWithQuote(address, parsedAmount);
     res.json(result);
   } catch (error) {
     console.error(`API error: ${error.message}`);
@@ -42,7 +55,8 @@ app.get('/', (_, res) => {
       {
         path: '/api/token/:address',
         method: 'GET',
-        description: 'Get token info with price from 0.01% pool'
+        description: 'Get token info with price from 0.01% pool',
+        query: 'Optional: amount=<number> (ETH amount for quote)'
       },
       {
         path: '/health',

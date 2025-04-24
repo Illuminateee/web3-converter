@@ -3,11 +3,11 @@ import { QUOTER_V1_ABI } from '../config/abis.js';
 import { QUOTER_V1_ADDRESS, WETH_ADDRESS, FIXED_PRICE_IMPACT } from '../config/constants.js';
 import { applyPriceImpact } from '../utils/calculations.js';
 
-export async function getQuote(tokenAddress, poolInfo, tokenDecimals, provider) {
+export async function getQuote(tokenAddress, poolInfo, tokenDecimals, provider, amountEth = 1) {
   try {
     // Use QuoterV1 for reliability
     const quoterV1 = new ethers.Contract(QUOTER_V1_ADDRESS, QUOTER_V1_ABI, provider);
-    const amountIn = ethers.utils.parseEther('1'); // 1 ETH
+    const amountIn = ethers.utils.parseEther(amountEth.toString()); // Convert amount to ETH
     
     const amountOut = await quoterV1.callStatic.quoteExactInputSingle(
       WETH_ADDRESS,
@@ -21,12 +21,13 @@ export async function getQuote(tokenAddress, poolInfo, tokenDecimals, provider) 
     const adjustedAmount = applyPriceImpact(rawAmount, FIXED_PRICE_IMPACT);
     
     return {
+      ethAmount: amountEth,
       rawQuote: rawAmount,
       priceImpact: FIXED_PRICE_IMPACT,
       adjustedQuote: adjustedAmount.toFixed(2),
       tokenPerEth: poolInfo.uniswapFormat,
       quoteFormat: `${adjustedAmount.toFixed(2)} ${poolInfo.tokenIsToken0 ? poolInfo.symbol0 : poolInfo.symbol1}`,
-      uniswapFormat: `🔄 ${poolInfo.uniswapFormat} ${poolInfo.tokenIsToken0 ? poolInfo.symbol0 : poolInfo.symbol1} per 1 WETH`
+      uniswapFormat: `🔄 ${poolInfo.uniswapFormat} ${poolInfo.tokenIsToken0 ? poolInfo.symbol0 : poolInfo.symbol1} per ${amountEth} WETH`
     };
   } catch (error) {
     console.error(`Error getting quote: ${error.message}`);

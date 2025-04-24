@@ -25,7 +25,7 @@ export async function getTokenInfo(tokenAddress, provider) {
   }
 }
 
-export async function getTokenWithQuote(tokenAddress) {
+export async function getTokenWithQuote(tokenAddress, amountEth = 1) {
   try {
     const provider = await getProvider();
     
@@ -39,8 +39,8 @@ export async function getTokenWithQuote(tokenAddress) {
       throw new Error(`No 0.01% pool found for ${tokenInfo.symbol}`);
     }
     
-    // Get quote data
-    const quoteData = await getQuote(tokenAddress, poolInfo, tokenInfo.decimals, provider);
+    // Get quote data with custom ETH amount
+    const quoteData = await getQuote(tokenAddress, poolInfo, tokenInfo.decimals, provider, amountEth);
     
     return {
       success: true,
