@@ -26,14 +26,17 @@ export async function getTokenInfo(tokenAddress, provider) {
 }
 
 export async function getTokenWithQuote(tokenAddress, amountEth = 1) {
+  let tokenInfo = null;
+  let poolInfo = null;
+  
   try {
     const provider = await getProvider();
     
     // Get token basic info
-    const tokenInfo = await getTokenInfo(tokenAddress, provider);
+    tokenInfo = await getTokenInfo(tokenAddress, provider);
     
     // Get pool info for the 0.01% fee tier
-    const poolInfo = await getPoolInfo(tokenAddress, FEE_TIER_0_01, provider);
+    poolInfo = await getPoolInfo(tokenAddress, FEE_TIER_0_01, provider);
     
     if (!poolInfo) {
       throw new Error(`No 0.01% pool found for ${tokenInfo.symbol}`);
@@ -41,6 +44,16 @@ export async function getTokenWithQuote(tokenAddress, amountEth = 1) {
     
     // Get quote data with custom ETH amount
     const quoteData = await getQuote(tokenAddress, poolInfo, tokenInfo.decimals, provider, amountEth);
+    
+    // Check if the quote had an error
+    if (quoteData.success === false) {
+      return {
+        success: true, // Still return success as we have token and pool info
+        token: tokenInfo,
+        pool: poolInfo,
+        quote: quoteData
+      };
+    }
     
     return {
       success: true,
@@ -52,7 +65,9 @@ export async function getTokenWithQuote(tokenAddress, amountEth = 1) {
     console.error(`Error processing token: ${error.message}`);
     return {
       success: false,
-      error: error.message
+      error: error.message,
+      token: tokenInfo,  // Return what we have, even if incomplete
+      pool: poolInfo
     };
   }
 }
